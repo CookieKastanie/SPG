@@ -1,0 +1,24 @@
+{
+  "name": "spg",
+  "version": "1.0.0",
+  "scripts": {
+    "watch": "webpack --watch",
+    "build": "webpack --config webpack.prod.js"
+  },
+  "author": "CookieKastanie",
+  "license": "",
+  "description": "",
+  "dependencies": {
+    "akila": "^0.1.7",
+    "ecef-projector": "^1.0.1",
+    "fast-xml-parser": "^4.5.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.7.2",
+    "webpack": "^5.96.1",
+    "webpack-cli": "^5.1.4"
+  }
+}
