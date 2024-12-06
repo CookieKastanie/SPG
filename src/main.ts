@@ -16,20 +16,62 @@ let shader: any;
 
 let skiResort = new SkiResort();
 let skiSlopeMeshes: Array<SkiSlopeMesh> = [];
-let marker: MarkerMesh;
+let markerMeshs: Map<string, MarkerMesh> = new Map();
 
-//*/
+
+const socket = io(':5109');
+
+socket.on('connect', () => {
+	console.log(socket.id);
+});
+
+socket.on('disconnect', () => {
+	console.log(socket.id);
+});
+
+socket.on('error_info', data => {
+	console.log(data);
+});
+
+socket.on('client_data', data => {
+	const result = skiResort.requestClosestSlope(data.point.lat, data.point.lon);
+	console.log('client_data', data, result);
+});
+
+socket.on('marker_data', data => {
+	const result = skiResort.requestClosestSlope(data.point.lat, data.point.lon);
+	
+	let marker;
+	if(markerMeshs.has(data.id))
+	{
+		marker = markerMeshs.get(data.id);
+	}
+	else
+	{
+		marker = new MarkerMesh(data.color);
+		markerMeshs.set(data.id, marker);
+	}
+
+	console.log('marker_data', data, result);
+	marker.position = result.requestPoint;
+});
+
+socket.on('client_delete', data => {
+
+});
+
+socket.on('marker_delete', data => {
+	markerMeshs.delete(data.id);
+});
+
+
 declare global {
     interface Window { setMarkerPosition: any; }
 }
 
 window.setMarkerPosition = (lat: number, lon: number) => {
-
-	const result = skiResort.requestClosestSlope(lat, lon);
-	marker.position = result.requestPoint;
-	console.log(result, marker);
+	socket.emit('marker_data', {point: {lat, lon}});
 }
-//*/
 
 time.onInit(() => {
 	display = new Display(1280, 720, {webGLVersion: 2, antialias: true, canvas: null});
@@ -37,8 +79,6 @@ time.onInit(() => {
 	camera = new FirstPersonCamera(1280, 720);
 	camera.setPosition([0, 0, 25]);
 	camera.setAngle([0, -Math.PI / 2, 0]);
-
-	marker = new MarkerMesh();
 
 	shader = new Shader(`#version 300 es
 	precision mediump float;
@@ -96,9 +136,12 @@ time.onDraw(() => {
 		p.draw();
 	}
 
-	shader.sendMat4("M", marker.getModelMatrix());
-	shader.sendVec3("color", marker.color);
-	marker.draw();
+	for(const [_, marker] of markerMeshs)
+	{
+		shader.sendMat4("M", marker.getModelMatrix());
+		shader.sendVec3("color", marker.color);
+		marker.draw();
+	}
 });
 
 time.start();
@@ -122,28 +165,22 @@ document.querySelector('#file-input')?.addEventListener('change', event => {
 			{
 				m.delete();
 			}
-
+			
 			skiSlopeMeshes = [];
 
 			for(const [_, slope] of skiResort.getSkiSlopes())
 			{
 				skiSlopeMeshes.push(new SkiSlopeMesh(slope));
 			}
+
+			for(const [_, marker] of markerMeshs)
+			{
+				const result = skiResort.requestClosestSlope(marker.position.latitude, marker.position.longitude);
+				marker.position = result.requestPoint;
+				console.log(result);
+			}
 		};
 
 		reader.readAsText(input.files[0]);
 	}
 });
-
-
-/*/
-const socket = io(':5109');
-
-socket.on("connect", () => {
-	console.log(socket.id); // x8WIv7-mJelg7on_ALbx
-});
-
-socket.on("disconnect", () => {
-	console.log(socket.id); // undefined
-});
-//*/

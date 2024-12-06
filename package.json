@@ -13,7 +13,8 @@
     "ecef-projector": "^1.0.1",
     "fast-xml-parser": "^4.5.0",
     "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1"
+    "socket.io-client": "^4.8.1",
+    "uuid": "^11.0.3"
   },
   "devDependencies": {
     "ts-loader": "^9.5.1",
