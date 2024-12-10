@@ -7,6 +7,7 @@ import { SkiSlopeMesh, MarkerMesh } from './graphic_object'
 
 import { SkiResort } from './ski_resort'
 import { io } from 'socket.io-client'
+import { MapCamera } from './camera'
 
 const time = new Time();
 
@@ -17,7 +18,6 @@ let shader: any;
 let skiResort = new SkiResort();
 let skiSlopeMeshes: Array<SkiSlopeMesh> = [];
 let markerMeshs: Map<string, MarkerMesh> = new Map();
-
 
 const socket = io(':5109');
 
@@ -73,12 +73,25 @@ window.setMarkerPosition = (lat: number, lon: number) => {
 	socket.emit('marker_data', {point: {lat, lon}});
 }
 
+
+
 time.onInit(() => {
-	display = new Display(1280, 720, {webGLVersion: 2, antialias: true, canvas: null});
+	display = new Display(window.innerWidth, window.innerHeight, {webGLVersion: 2, antialias: true, canvas: null});
 	display.setClearColor(0.5, 0.5, 0.5, 1);
-	camera = new FirstPersonCamera(1280, 720);
-	camera.setPosition([0, 0, 25]);
-	camera.setAngle([0, -Math.PI / 2, 0]);
+	
+	//camera = new FirstPersonCamera(display.getWidth(), display.getHeight());
+	camera = new MapCamera(display.canvas);
+	//camera.setPosition([0, 0, 25]);
+	//camera.setAngle([0, -Math.PI / 2, 0]);
+
+	window.addEventListener('resize', e => {
+		display.canvas.width = window.innerWidth;
+		display.canvas.height = window.innerHeight;
+
+		camera.setSize(display.canvas.width, display.canvas.height);
+	});
+
+	
 
 	shader = new Shader(`#version 300 es
 	precision mediump float;
@@ -111,19 +124,24 @@ time.onTick(() => {
 });
 
 time.onDraw(() => {
-	camera.update();
+	display.useDefaultFrameBuffer();
+
+	camera.update(Time.delta);
 	const aabb = skiResort.getAABB();
 //*/
-	if(camera.position[0] < aabb.min[0] * 0.01) camera.position[0] = aabb.min[0] * 0.01;
-	if(camera.position[1] < aabb.min[1] * 0.01) camera.position[1] = aabb.min[1] * 0.01;
-	//if(camera.position[2] < aabb.min[2] * 0.01) camera.position[2] = aabb.min[2] * 0.01;
+	if(camera.position[0] < aabb.min[0]) camera.position[0] = aabb.min[0];
+	if(camera.position[1] < aabb.min[1]) camera.position[1] = aabb.min[1];
+	//if(camera.position[2] < aabb.min[2]) camera.position[2] = aabb.min[2];
 	if(camera.position[2] < 5) camera.position[2] = 5;
 
-	if(camera.position[0] > aabb.max[0] * 0.01) camera.position[0] = aabb.max[0] * 0.01;
-	if(camera.position[1] > aabb.max[1] * 0.01) camera.position[1] = aabb.max[1] * 0.01;
-	//if(camera.position[2] > aabb.max[2] * 0.01) camera.position[2] = aabb.max[2] * 0.01;
+	if(camera.position[0] > aabb.max[0]) camera.position[0] = aabb.max[0];
+	if(camera.position[1] > aabb.max[1]) camera.position[1] = aabb.max[1];
+	//if(camera.position[2] > aabb.max[2]) camera.position[2] = aabb.max[2];
 	if(camera.position[2] > 50) camera.position[2] = 50;
 //*/
+
+	camera.prepareMatrix();
+
 	display.clear();
 
 	shader.use();

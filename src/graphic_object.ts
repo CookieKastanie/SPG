@@ -15,9 +15,9 @@ export class SkiSlopeMesh
 		let i = 0;
 		for(const point of skiSlope.points)
 		{
-			data[i + 0] = point.local[0] * 0.01;
-			data[i + 1] = point.local[1] * 0.01;
-			data[i + 2] = point.local[2] * 0.01;
+			data[i + 0] = point.local[0];
+			data[i + 1] = point.local[1];
+			data[i + 2] = point.local[2];
 
 			i += 3;
 		}
@@ -66,14 +66,14 @@ export class MarkerMesh
 		this.color = new Float32Array(color);
 
 		this.vao = new VAO(VAO.TRIANGLE_FAN);
-		const data = new Float32Array([-0.1, -0.1,  0.1, -0.1,  0.1, 0.1,  -0.1, 0.1]);
+		const data = new Float32Array([-10, -10,  10, -10,  10, 10,  -10, 10]);
 		const vbo = new VBO(data, 2, 0);
 		this.vao.addVBO(vbo);
 	}
 
 	getModelMatrix()
 	{
-		mat4.fromTranslation(this.matrix, vec3.fromValues(this.position.local[0] * 0.01, this.position.local[1] * 0.01, this.position.local[2] * 0.01));
+		mat4.fromTranslation(this.matrix, vec3.fromValues(this.position.local[0], this.position.local[1], this.position.local[2]));
 		return this.matrix;
 	}
 
