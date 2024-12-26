@@ -1,26 +1,11 @@
 import { XMLParser } from 'fast-xml-parser'
-import { GeodeticLocation } from './point';
+import { MapMeta, MapSkiSlope, MapFile } from './map_file';
 
-export class OSMMeta
-{
-	centerLatitude: number;
-	centerLongitude: number;
-	centerAltitude: number;
-}
-
-export class OSMSkiSlope
-{
-	id: string = '';
-	name: string = '';
-	difficulty: string = 'novice';
-	points: Array<GeodeticLocation> = [];
-}
-
-export class OSMFile
+export class OSMFile extends MapFile
 {
 	private osm: any = null; // the parsed osm (xml) object
 
-	loadData(raw: string)
+	override loadData(raw: string)
 	{
 		const options = {
 			ignoreAttributes: false,
@@ -35,9 +20,9 @@ export class OSMFile
 		}
 	}
 
-	parseMeta()
+	override parseMeta()
 	{
-		const meta = new OSMMeta();
+		const meta = new MapMeta();
 
 		meta.centerLatitude = (Number(this.osm.bounds.minlat) + Number(this.osm.bounds.maxlat)) * 0.5;
 		meta.centerLongitude = (Number(this.osm.bounds.minlon) + Number(this.osm.bounds.maxlon)) * 0.5;
@@ -46,7 +31,7 @@ export class OSMFile
 		return meta;
 	}
 
-	parseSkiSlopes()
+	override parseSkiSlopes()
 	{
 		const indexedNodes = new Map();
 		for(const node of this.osm.node)
@@ -54,7 +39,7 @@ export class OSMFile
 			indexedNodes.set(node.id, node);
 		}
 
-		const skiSlopes: Array<OSMSkiSlope> = [];
+		const skiSlopes: Array<MapSkiSlope> = [];
 		for(const way of this.osm.way)
 		{
 			if(Array.isArray(way.tag) == false)
@@ -64,7 +49,7 @@ export class OSMFile
 	
 			let isSkiSlope = false;
 	
-			const skiSlope = new OSMSkiSlope();
+			const skiSlope = new MapSkiSlope();
 			skiSlope.id = way.id;
 	
 			for(const tag of way.tag)
@@ -108,101 +93,3 @@ export class OSMFile
 		return skiSlopes;
 	}
 }
-
-
-
-
-
-
-
-
-/*/
-const stringToDifficulty = (s: string) => {
-	switch(s)
-	{
-		case 'novice': return PisteDifficulty.NOVICE;
-		case 'easy': return PisteDifficulty.EASY;
-		case 'intermediate': return PisteDifficulty.INTERMEDIATE;
-		case 'advanced': return PisteDifficulty.ADVANCED;
-		case 'expert': return PisteDifficulty.EXPERT;
-		case 'freeride': return PisteDifficulty.FREERIDE;
-		case 'extreme': return PisteDifficulty.EXTREME;
-	}
-
-	return PisteDifficulty.NOVICE;
-}
-
-export const parseOSM = (osmData: string, geoRef: GeoReference) => {
-	const options = {
-		ignoreAttributes: false,
-		attributeNamePrefix: ''
-	};
-
-	const parser = new XMLParser(options);
-	const osm = parser.parse(osmData, true);
-
-	geoRef.setup(
-		(Number(osm.osm.bounds.minlat) + Number(osm.osm.bounds.maxlat)) * 0.5,
-		(Number(osm.osm.bounds.minlon) + Number(osm.osm.bounds.maxlon)) * 0.5
-	);
-
-	const indexedNodes = new Map();
-	for(const node of osm.osm.node)
-	{
-		indexedNodes.set(node.id, node);
-	}
-
-	const pistes: Array<OSMSkiSlope> = [];
-	for(const way of osm.osm.way)
-	{
-		if(Array.isArray(way.tag) == false)
-		{
-			continue;
-		}
-
-		let isPiste = false;
-
-		const piste = new OSMSkiSlope();
-		piste.id = way.id;
-
-		for(const tag of way.tag)
-		{
-			if(tag.k === 'name')
-			{
-				piste.name = tag.v;
-			}
-
-			// https://wiki.openstreetmap.org/wiki/Key:piste:difficulty
-			if(tag.k === 'piste:difficulty')
-			{
-				piste.difficulty = tag.v;
-			}
-
-			if(tag.k === 'piste:type')
-			{
-				isPiste = tag.v === 'downhill';
-			}
-		}
-
-		if(isPiste === false)
-		{
-			continue;
-		}
-
-		if(piste.name == '')
-		{
-			continue
-		}
-
-		for(const nd of way.nd)
-		{
-			const node = indexedNodes.get(nd.ref);
-			piste.points.push(geoRef.makePointFromGeodetic(Number(node.lat), Number(node.lon)));
-		}
-
-		pistes.push(piste);
-	}
-
-	return pistes;
-}
-//*/

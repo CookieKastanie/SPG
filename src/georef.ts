@@ -71,7 +71,7 @@ export class GeoReference
 		return this.latitude;
 	}
 
-	getLLongitude()
+	getLongitude()
 	{
 		return this.longitude;
 	}

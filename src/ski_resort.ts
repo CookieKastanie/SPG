@@ -1,6 +1,6 @@
 import { GeoReference } from "./georef";
 import { SkiSlope, stringToSkiSlopeDifficulty } from "./ski_slop";
-import { OSMFile } from "./oms_parser";
+import { MapFile } from "./map_file";
 import { GeoPoint } from "./point";
 import { AABB } from "./aabb";
 
@@ -17,31 +17,29 @@ export class SkiResort
 	private geoRef: GeoReference = new GeoReference();
 	private aabb: AABB = new AABB();
 
-	loadOSM(data: string)
+	load(file: MapFile)
 	{
-		const osm = new OSMFile();
-		osm.loadData(data);
-
 		if(this.geoRef.isValid() == false)
 		{
-			const meta = osm.parseMeta();
+			const meta = file.parseMeta();
 			this.geoRef.setup(meta.centerLatitude, meta.centerLongitude, meta.centerAltitude);
 			this.aabb.reset();
 		}
 
-		const osmSlopes = osm.parseSkiSlopes();
-		for(const osmSlope of osmSlopes)
+		const fileSlopes = file.parseSkiSlopes();
+		
+		for(const fileSlope of fileSlopes)
 		{
-			if(this.skiSlopes.has(osmSlope.id))
+			if(this.skiSlopes.has(fileSlope.id))
 			{
 				continue;
 			}
 
 			const skiSlope = new SkiSlope();
-			skiSlope.id = osmSlope.id;
-			skiSlope.name = osmSlope.name;
-			skiSlope.difficulty = stringToSkiSlopeDifficulty(osmSlope.difficulty);
-			for(const point of osmSlope.points)
+			skiSlope.id = fileSlope.id;
+			skiSlope.name = fileSlope.name;
+			skiSlope.difficulty = stringToSkiSlopeDifficulty(fileSlope.difficulty);
+			for(const point of fileSlope.points)
 			{
 				const geoPoint = this.geoRef.makePointFromGeodetic(point.latitude, point.longitude, point.altitude);
 				skiSlope.points.push(geoPoint);

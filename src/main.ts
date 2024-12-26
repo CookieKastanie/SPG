@@ -8,6 +8,8 @@ import { SkiSlopeMesh, MarkerMesh } from './graphic_object'
 import { SkiResort } from './ski_resort'
 import { io } from 'socket.io-client'
 import { MapCamera } from './camera'
+import { OSMFile } from './oms_parser'
+import { JSONMapFile } from './json_map_parser'
 
 const time = new Time();
 
@@ -67,11 +69,17 @@ socket.on('marker_delete', data => {
 
 declare global {
     interface Window { setMarkerPosition: any; }
+	interface Window { writeJson: any; }
 }
 
 window.setMarkerPosition = (lat: number, lon: number) => {
 	socket.emit('marker_data', {point: {lat, lon}});
 }
+
+window.writeJson = () => {
+	console.log(new JSONMapFile().write(skiResort));
+}
+
 
 
 
@@ -168,7 +176,7 @@ time.start();
 ///////
 
 
-document.querySelector('#file-input')?.addEventListener('change', event => {
+document.querySelector('#osm-file')?.addEventListener('change', event => {
 	const input = <HTMLInputElement>event.target;
 
 	if(input.files && input.files[0])
@@ -177,7 +185,10 @@ document.querySelector('#file-input')?.addEventListener('change', event => {
 
 		reader.onload = e => {
 			const data: string = e.target.result as string;
-			skiResort.loadOSM(data);
+
+			const osm = new OSMFile();
+			osm.loadData(data);
+			skiResort.load(osm);
 
 			for(const m of skiSlopeMeshes)
 			{
@@ -202,3 +213,44 @@ document.querySelector('#file-input')?.addEventListener('change', event => {
 		reader.readAsText(input.files[0]);
 	}
 });
+
+document.querySelector('#json-file')?.addEventListener('change', event => {
+	const input = <HTMLInputElement>event.target;
+
+	if(input.files && input.files[0])
+	{
+		const reader = new FileReader();
+
+		reader.onload = e => {
+			const data: string = e.target.result as string;
+
+			const json = new JSONMapFile();
+			json.loadData(data);
+
+			skiResort = new SkiResort();
+			skiResort.load(json);
+
+			for(const m of skiSlopeMeshes)
+			{
+				m.delete();
+			}
+			
+			skiSlopeMeshes = [];
+
+			for(const [_, slope] of skiResort.getSkiSlopes())
+			{
+				skiSlopeMeshes.push(new SkiSlopeMesh(slope));
+			}
+
+			for(const [_, marker] of markerMeshs)
+			{
+				const result = skiResort.requestClosestSlope(marker.position.latitude, marker.position.longitude);
+				marker.position = result.requestPoint;
+				console.log(result);
+			}
+		};
+
+		reader.readAsText(input.files[0]);
+	}
+});
+

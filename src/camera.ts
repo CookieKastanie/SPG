@@ -212,7 +212,7 @@ export class MapCamera extends Camera
 
 	update(dt: number)
 	{
-		const speed = this.zoom;
+		const speed = this.zoom * (1 / window.devicePixelRatio);
 
 		{ // mouse
 			if(this.mouse.isPressed(Mouse.LEFT_BUTTON))

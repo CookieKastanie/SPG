@@ -30,6 +30,21 @@ export const stringToSkiSlopeDifficulty = (s: string) => {
 	return SkiSlopeDifficulty.NOVICE;
 }
 
+export const skiSlopeDifficultyToString = (s: SkiSlopeDifficulty) => {
+	switch(s)
+	{
+		case SkiSlopeDifficulty.NOVICE: return 'novice';
+		case SkiSlopeDifficulty.EASY: return 'easy';
+		case SkiSlopeDifficulty.INTERMEDIATE: return 'intermediate';
+		case SkiSlopeDifficulty.ADVANCED: return 'advanced';
+		case SkiSlopeDifficulty.EXPERT: return 'expert';
+		case SkiSlopeDifficulty.FREERIDE: return 'freeride';
+		case SkiSlopeDifficulty.EXTREME: return 'extreme';
+	}
+	
+	return 'novice';
+}
+
 export class SkiSlope
 {
 	id: string = '';
