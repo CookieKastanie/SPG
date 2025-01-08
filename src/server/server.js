@@ -26,7 +26,7 @@ app.use(express.static('public'));
 /*/
 const io = require('socket.io')(server, {
 	cors: {
-		origin: 'https://ski.letoutchaud.fr',
+		origin: ['https://ski.letoutchaud.fr','https://cookiekastanie.letoutchaud.fr'],
 		credentials: true
 	}
 });
