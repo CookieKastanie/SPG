@@ -1,0 +1,7 @@
+{
+	"port": 5109,
+	"cors_origin": "*",
+	"use_ssl": false,
+	"certificate_key_path": "",
+	"certificate_path": ""
+}

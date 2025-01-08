@@ -11,6 +11,7 @@
   "dependencies": {
     "akila": "^0.1.7",
     "ecef-projector": "^1.0.1",
+    "express": "^4.21.2",
     "fast-xml-parser": "^4.5.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",

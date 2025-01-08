@@ -9,38 +9,37 @@ const randomColor = () => {
 }
 
 
-const https = require('https');
 const express = require('express');
 const fs = require('fs');
 const config = require('./config.json');
 
 const app = express();
+let server;
 
-const server = https.createServer({
-	key: fs.readFileSync(config.certificate_key_path, 'utf8'),
-	cert: fs.readFileSync(config.certificate_path, 'utf8')
-}, app);
+if(config.use_ssl)
+{
+	const https = require('https');
+	server = https.createServer({
+		key: fs.readFileSync(config.certificate_key_path, 'utf8'),
+		cert: fs.readFileSync(config.certificate_path, 'utf8')
+	}, app);
+}
+else
+{
+	const http = require('http');
+	server = http.createServer({}, app);
+}
 
 app.use(express.static('public'));
 
-/*/
 const io = require('socket.io')(server, {
 	cors: {
-		origin: ['https://ski.letoutchaud.fr','https://cookiekastanie.letoutchaud.fr'],
-		credentials: true
-	}
-});
-//*/
-
-
-const io = require('socket.io')(server, {
-	cors: {
-		origin: ['https://cookiekastanie.letoutchaud.fr/:*'],
-		//origin: '*',
+		origin: config.cors_origin,
 		credentials: true
 	}
 });
 
+////////
 
 const Client = require('./client');
 const Marker = require('./marker');
@@ -133,6 +132,5 @@ io.on('connection', socket => {
 	});
 });
 
-const port = 5109;
-server.listen(port);
-console.log(`Servier listening on port ${port}`);
+server.listen(config.port);
+console.log(`Servier listening on port ${config.port}`);

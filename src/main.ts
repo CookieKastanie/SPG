@@ -26,10 +26,10 @@ let markerMeshs: Map<string, MarkerMesh> = new Map();
 
 
 let socket: any;
+const port = 5109;
 
 const setupConnection = () => {
-	//socket = io(':5109');
-	socket = io(':3000');
+	socket = io(`:${port}`);
 
 	socket.on('connect', () => {
 		console.log(socket.id);
