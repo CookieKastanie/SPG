@@ -9,16 +9,25 @@ const randomColor = () => {
 }
 
 
-const http = require('http');
-const server = http.createServer();
+const https = require('https');
+const express = require('express');
+const fs = require('fs');
+const config = require('./config.json');
+
+const app = express();
+
+const server = https.createServer({
+	key: fs.readFileSync(config.certificate_key_path, 'utf8'),
+	cert: fs.readFileSync(config.certificate_path, 'utf8')
+}, app);
+
+app.use(express.static('public'));
 
 /*/
 const io = require('socket.io')(server, {
 	cors: {
-		origin : '*',
-		//methods: ['GET', 'POST'],
-		//allowedHeaders: ['Content-Type', 'Authorization'],
-		//credentials: true,
+		origin: 'https://ski.letoutchaud.fr',
+		credentials: true
 	}
 });
 //*/
@@ -124,7 +133,6 @@ io.on('connection', socket => {
 	});
 });
 
-//const port = 5109;
-const port = 3001;
-io.listen(port);
+const port = 5109;
+server.listen(port);
 console.log(`Servier listening on port ${port}`);
