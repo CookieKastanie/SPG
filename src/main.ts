@@ -8,8 +8,9 @@ import { SkiSlopeMesh, MarkerMesh } from './graphic_object'
 import { SkiResort } from './ski_resort'
 import { io } from 'socket.io-client'
 import { MapCamera } from './camera'
-import { OSMFile } from './oms_parser'
 import { JSONMapFile } from './json_map_parser'
+import { UI } from './ui'
+import { VILLARD_DATA } from './raw_json'
 
 const time = new Time();
 
@@ -19,52 +20,86 @@ let shader: any;
 
 let skiResort = new SkiResort();
 let skiSlopeMeshes: Array<SkiSlopeMesh> = [];
+let clientMeshs: Map<string, MarkerMesh> = new Map();
 let markerMeshs: Map<string, MarkerMesh> = new Map();
 
-const socket = io(':5109');
 
-socket.on('connect', () => {
-	console.log(socket.id);
-});
 
-socket.on('disconnect', () => {
-	console.log(socket.id);
-});
+let socket: any;
 
-socket.on('error_info', data => {
-	console.log(data);
-});
+const setupConnection = () => {
+	//socket = io(':5109');
+	socket = io(':3000');
 
-socket.on('client_data', data => {
-	const result = skiResort.requestClosestSlope(data.point.lat, data.point.lon);
-	console.log('client_data', data, result);
-});
+	socket.on('connect', () => {
+		console.log(socket.id);
 
-socket.on('marker_data', data => {
-	const result = skiResort.requestClosestSlope(data.point.lat, data.point.lon);
+		navigator.geolocation.watchPosition(e => {
+			console.log(e);
+			if(!socket)
+			{
+				return;
+			}
+		
+			socket.emit('client_data', {point: {lat: e.coords.latitude, lon: e.coords.longitude, alt: e.coords.altitude}});
+		});
+		console.log(navigator.geolocation.getCurrentPosition(console.log));
+		console.log("start geoloc");
+
+	});
 	
-	let marker;
-	if(markerMeshs.has(data.id))
-	{
-		marker = markerMeshs.get(data.id);
-	}
-	else
-	{
-		marker = new MarkerMesh(data.color);
-		markerMeshs.set(data.id, marker);
-	}
+	socket.on('disconnect', () => {
+		console.log(socket.id);
+	});
+	
+	socket.on('error_info', (data: any) => {
+		console.log(data);
+	});
+	
+	socket.on('client_data', (data: any) => {
+		const result = skiResort.requestClosestSlope(data.point.lat, data.point.lon);
+		let client;
+		if(clientMeshs.has(data.id))
+		{
+			client = clientMeshs.get(data.id);
+		}
+		else
+		{
+			client = new MarkerMesh(data.color);
+			clientMeshs.set(data.id, client);
+		}
+	
+		console.log('client_data', data, result);
+		client.position = result.requestPoint;
+	});
+	
+	socket.on('marker_data', (data: any) => {
+		const result = skiResort.requestClosestSlope(data.point.lat, data.point.lon);
+		
+		let marker;
+		if(markerMeshs.has(data.id))
+		{
+			marker = markerMeshs.get(data.id);
+		}
+		else
+		{
+			marker = new MarkerMesh(data.color);
+			markerMeshs.set(data.id, marker);
+		}
+	
+		console.log('marker_data', data, result);
+		marker.position = result.requestPoint;
+	});
+	
+	socket.on('client_delete', (data: any) => {
+		clientMeshs.delete(data.id);
+	});
+	
+	socket.on('marker_delete', (data: any) => {
+		markerMeshs.delete(data.id);
+	});
+}
 
-	console.log('marker_data', data, result);
-	marker.position = result.requestPoint;
-});
-
-socket.on('client_delete', data => {
-
-});
-
-socket.on('marker_delete', data => {
-	markerMeshs.delete(data.id);
-});
 
 
 declare global {
@@ -150,6 +185,8 @@ time.onDraw(() => {
 
 	camera.prepareMatrix();
 
+	display.enable(Display.DEPTH_TEST);
+
 	display.clear();
 
 	shader.use();
@@ -162,6 +199,8 @@ time.onDraw(() => {
 		p.draw();
 	}
 
+	display.disable(Display.DEPTH_TEST);
+
 	for(const [_, marker] of markerMeshs)
 	{
 		shader.sendMat4("M", marker.getModelMatrix());
@@ -170,12 +209,46 @@ time.onDraw(() => {
 	}
 });
 
-time.start();
 
+
+const ui = new UI();
+
+const loadJsonData = (data: string) => {
+	const json = new JSONMapFile();
+	json.loadData(data);
+
+	skiResort = new SkiResort();
+	skiResort.load(json);
+
+	for(const m of skiSlopeMeshes)
+	{
+		m.delete();
+	}
+	
+	skiSlopeMeshes = [];
+
+	for(const [_, slope] of skiResort.getSkiSlopes())
+	{
+		skiSlopeMeshes.push(new SkiSlopeMesh(slope));
+	}
+
+	for(const [_, marker] of markerMeshs)
+	{
+		const result = skiResort.requestClosestSlope(marker.position.latitude, marker.position.longitude);
+		marker.position = result.requestPoint;
+		console.log(result);
+	}
+}
+
+ui.showConnectionMenu((n) => {console.log('name:', n);
+	time.start();
+	loadJsonData(VILLARD_DATA);
+	setupConnection();
+});
 
 ///////
 
-
+/*/
 document.querySelector('#osm-file')?.addEventListener('change', event => {
 	const input = <HTMLInputElement>event.target;
 
@@ -253,4 +326,4 @@ document.querySelector('#json-file')?.addEventListener('change', event => {
 		reader.readAsText(input.files[0]);
 	}
 });
-
+//*/

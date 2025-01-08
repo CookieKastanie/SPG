@@ -1,12 +1,36 @@
+// input: h in [0,360] and s,v in [0,1] - output: r,g,b in [0,1]
+const hsv2rgb = (h,s,v) => {
+	let f= (n,k=(n+h/60)%6) => v - v*s*Math.max(Math.min(k,4-k,1), 0);     
+	return [f(5),f(3),f(1)];  
+}
+
+const randomColor = () => {
+	return hsv2rgb(Math.random() * 360, 1, 1);
+}
+
+
 const http = require('http');
 const server = http.createServer();
 
+/*/
 const io = require('socket.io')(server, {
 	cors: {
-		origin : '*'
+		origin : '*',
+		//methods: ['GET', 'POST'],
+		//allowedHeaders: ['Content-Type', 'Authorization'],
+		//credentials: true,
 	}
 });
+//*/
 
+
+const io = require('socket.io')(server, {
+	cors: {
+		origin: ['https://cookiekastanie.letoutchaud.fr/:*'],
+		//origin: '*',
+		credentials: true
+	}
+});
 
 
 const Client = require('./client');
@@ -44,7 +68,10 @@ const broadcast = (name, data, exeptId = '') => {
 
 io.on('connection', socket => {
 	syncNewClient(socket);
-	clients.set(socket.id, new Client(socket));
+
+	const newClient = new Client(socket);
+	clients.set(socket.id, newClient);
+	newClient.color = randomColor();
 
 	socket.on('client_data', data => {
 		const client = clients.get(socket.id);
@@ -69,6 +96,7 @@ io.on('connection', socket => {
 		else
 		{
 			marker = new Marker();
+			marker.color = randomColor();
 		}
 
 		if(marker.fromObject(data))
@@ -96,6 +124,7 @@ io.on('connection', socket => {
 	});
 });
 
-const port = 5109;
+//const port = 5109;
+const port = 3001;
 io.listen(port);
 console.log(`Servier listening on port ${port}`);
